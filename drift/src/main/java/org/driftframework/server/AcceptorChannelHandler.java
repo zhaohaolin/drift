@@ -67,7 +67,6 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
-		// 已经经过解码后的对象
 		final Object msg = e.getMessage();
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("messageReceived: " + msg);

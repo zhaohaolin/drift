@@ -228,24 +228,25 @@ public class DefaultEndpoint implements Endpoint {
 	// receiver
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void messageReceived(final Object input) {
-		final Xip msg = (Xip) input;
-		String uuid = msg.getIdentification();
-		Object obj = getResponseContext().getAndRemove(uuid);
-		if (null != obj) {
-			try {
-				if (obj instanceof ResponseFuture) {
-					((ResponseFuture) obj).set(msg);
+	public void messageReceived(final Object msg) {
+		if (msg instanceof Xip) {
+			String uuid = ((Xip) msg).getIdentification();
+			Object obj = getResponseContext().getAndRemove(uuid);
+			if (null != obj) {
+				try {
+					if (obj instanceof ResponseFuture) {
+						((ResponseFuture) obj).set(msg);
+					}
+					if (obj instanceof ResponseClosure) {
+						((ResponseClosure) obj).onResponse(msg);
+					}
+				} catch (Exception e) {
+					LOG.error("onResponse error.", e);
 				}
-				if (obj instanceof ResponseClosure) {
-					((ResponseClosure) obj).onResponse(msg);
+			} else {
+				if (this.receiver != null) {
+					this.receiver.messageReceived(msg);
 				}
-			} catch (Exception e) {
-				LOG.error("onResponse error.", e);
-			}
-		} else {
-			if (this.receiver != null) {
-				this.receiver.messageReceived(msg);
 			}
 		}
 		
