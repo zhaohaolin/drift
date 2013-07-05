@@ -48,8 +48,8 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 																	.newSingleThreadExecutor();
 	
 	@Override
-	public void messageReceived(final Xip msg) {
-		
+	public void messageReceived(final Object input) {
+		final Xip msg = (Xip) input;
 		Runnable task = new Runnable() {
 			
 			@Override

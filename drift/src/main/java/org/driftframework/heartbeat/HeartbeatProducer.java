@@ -76,37 +76,41 @@ public class HeartbeatProducer {
 				}
 				
 				// 向中央控制器发送心跳包消息
-				connector.send(req, new ResponseClosure<HeartbeatResp>() {
-					
-					@Override
-					public void onResponse(final HeartbeatResp resp) {
-						
-						// 返回心跳包响应
-						if (LOG.isTraceEnabled()) {
-							LOG.trace(
-									"response connector=[{}], HeartbeatResp=[{}]",
-									new Object[] { connector, resp });
-						}
-						
-						// 当路由配置不为空时
-						if (!routers.isEmpty()) {
-							List<ServerGroup> groups = resp.getCandidates();
-							for (ServerGroup group : groups) {
-								Router router = routers.get(group
-										.getServerType());
-								if (null != router) {
-									if (LOG.isTraceEnabled()) {
-										LOG.trace(
-												"refresh router router=[{}], group=[{}]",
-												new Object[] { router, group });
+				
+				connector.send("/heartbeat", req,
+						new ResponseClosure<HeartbeatResp>() {
+							
+							@Override
+							public void onResponse(final HeartbeatResp resp) {
+								
+								// 返回心跳包响应
+								if (LOG.isTraceEnabled()) {
+									LOG.trace(
+											"response connector=[{}], HeartbeatResp=[{}]",
+											new Object[] { connector, resp });
+								}
+								
+								// 当路由配置不为空时
+								if (!routers.isEmpty()) {
+									List<ServerGroup> groups = resp
+											.getCandidates();
+									for (ServerGroup group : groups) {
+										Router router = routers.get(group
+												.getServerType());
+										if (null != router) {
+											if (LOG.isTraceEnabled()) {
+												LOG.trace(
+														"refresh router router=[{}], group=[{}]",
+														new Object[] { router,
+																group });
+											}
+											router.doRefreshRoute(convert(group));
+										}
 									}
-									router.doRefreshRoute(convert(group));
 								}
 							}
-						}
-					}
-					
-				});
+							
+						});
 				
 			}
 		}, 0, heartbeatInterval, TimeUnit.MILLISECONDS);

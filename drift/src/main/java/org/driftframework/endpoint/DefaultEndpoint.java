@@ -228,7 +228,8 @@ public class DefaultEndpoint implements Endpoint {
 	// receiver
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void messageReceived(final Xip msg) {
+	public void messageReceived(final Object input) {
+		final Xip msg = (Xip) input;
 		String uuid = msg.getIdentification();
 		Object obj = getResponseContext().getAndRemove(uuid);
 		if (null != obj) {
@@ -254,15 +255,12 @@ public class DefaultEndpoint implements Endpoint {
 	}
 	
 	// send
-	
-	@Override
 	public <Req extends Xip> void send(final Req req) {
 		if (null != req) {
 			addToPending(req);
 		}
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> void send(
 			Req req, ResponseClosure<Resp> callback) {
 		if (null != req) {
@@ -272,14 +270,12 @@ public class DefaultEndpoint implements Endpoint {
 		}
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> Resp sendAndWait(
 			Req req) {
 		return sendAndWait(req, sendTimeout, TimeUnit.MILLISECONDS);
 	}
 	
 	@SuppressWarnings("unchecked")
-	@Override
 	public <Req extends Xip, Resp extends XipResponse> Resp sendAndWait(
 			Req req, long timeout, TimeUnit units) {
 		if (null == req) {

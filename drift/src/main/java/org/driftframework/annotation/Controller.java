@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * TODO
+ * define Controller of tcp transform annotation
  * 
  * @author qiaofeng
  * @version $Id: DriftController, v 0.1 2013年7月4日 下午2:25:13 Exp $

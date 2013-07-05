@@ -17,7 +17,6 @@ package org.driftframework.server;
 
 import org.driftframework.endpoint.Endpoint;
 import org.driftframework.endpoint.EndpointFactory;
-import org.driftframework.protocol.AbstractXip;
 import org.driftframework.util.TransportUtil;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -41,11 +40,10 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 	private final EndpointFactory	endpointFactory;
 	
 	public AcceptorChannelHandler(EndpointFactory endpointFactory) {
-		super();
 		this.endpointFactory = endpointFactory;
 	}
 	
-	// 被连接上时
+	// channel连接时
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
@@ -56,7 +54,7 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 		}
 	}
 	
-	// 被开启时
+	// channel打开时
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
@@ -65,12 +63,12 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 		}
 	}
 	
-	// 接收消息时：
+	// channel接收消息时：
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
 		// 已经经过解码后的对象
-		final AbstractXip msg = (AbstractXip) e.getMessage();
+		final Object msg = e.getMessage();
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("messageReceived: " + msg);
 		}
@@ -84,7 +82,7 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 		}
 	}
 	
-	// 关闭时
+	// channel关闭时
 	@Override
 	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
@@ -99,6 +97,7 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 		}
 	}
 	
+	// 发生异常时
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 			throws Exception {

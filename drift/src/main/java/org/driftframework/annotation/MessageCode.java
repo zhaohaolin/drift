@@ -19,7 +19,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
- * TODO
+ * define the protocol of xip annotation
  * 
  * @author qiaofeng
  * @version $Id: MessageCode, v 0.1 2013年7月4日 下午7:22:46 Exp $

@@ -37,6 +37,7 @@ import org.driftframework.protocol.XipResponse;
 import org.driftframework.receiver.Receiver;
 import org.driftframework.response.ResponseClosure;
 import org.driftframework.session.AddressProvider;
+import org.driftframework.session.DefaultAddressProvider;
 import org.driftframework.util.TransportUtil;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -95,11 +96,11 @@ public class DefaultConnector implements Connector {
 			// register loggerFactory
 			InternalLoggerFactory.setDefaultFactory(loggerFactory);
 			
+			addressProvider = new DefaultAddressProvider(destIp, destPort);
+			
 			client = new ClientBootstrap(new NioClientSocketChannelFactory(
 					Executors.newCachedThreadPool(),
 					Executors.newCachedThreadPool()));
-			
-			// TODO add ioChannelController
 			
 			// set codeFactory
 			client.setPipelineFactory(new ChannelPipelineFactory() {
@@ -323,10 +324,6 @@ public class DefaultConnector implements Connector {
 		this.reconnectTimeout = reconnectTimeout;
 	}
 	
-	public void setAddressProvider(AddressProvider addressProvider) {
-		this.addressProvider = addressProvider;
-	}
-	
 	public void setEndpointRepository(EndpointRepository endpointRepository) {
 		this.endpointRepository = endpointRepository;
 	}
@@ -351,14 +348,12 @@ public class DefaultConnector implements Connector {
 		this.endpointRepository.setMaxSession(maxSession);
 	}
 	
-	@Override
 	public <Req extends Xip> void send(Req req) {
 		Endpoint endpoint = endpointRepository.getEndpoint();
 		if (null != endpoint)
 			endpoint.send(req);
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> void send(
 			Req req, ResponseClosure<Resp> callback) {
 		Endpoint endpoint = endpointRepository.getEndpoint();
@@ -367,7 +362,6 @@ public class DefaultConnector implements Connector {
 		}
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> Resp sendAndWait(
 			Req req) {
 		Endpoint endpoint = endpointRepository.getEndpoint();
@@ -377,7 +371,6 @@ public class DefaultConnector implements Connector {
 		return null;
 	}
 	
-	@Override
 	public <Req extends Xip, Resp extends XipResponse> Resp sendAndWait(
 			Req req, long timeout, TimeUnit units) {
 		Endpoint endpoint = endpointRepository.getEndpoint();

@@ -22,8 +22,6 @@ import org.driftframework.context.Context;
 import org.driftframework.endpoint.EndpointFactory;
 import org.driftframework.endpoint.EndpointRepository;
 import org.driftframework.receiver.Receiver;
-import org.driftframework.session.AddressProvider;
-import org.jboss.netty.logging.InternalLoggerFactory;
 
 import com.toolkit.lang.Closure;
 
@@ -51,11 +49,7 @@ public interface Connector extends Sender {
 	
 	void setContext(Context context);
 	
-	void setLoggerFactory(InternalLoggerFactory loggerFactory);
-	
 	void setReconnectTimeout(long reconnectTimeout);
-	
-	void setAddressProvider(AddressProvider addressProvider);
 	
 	void setEndpointRepository(EndpointRepository endpointRepository);
 	

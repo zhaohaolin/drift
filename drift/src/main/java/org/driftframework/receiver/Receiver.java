@@ -15,7 +15,6 @@
  */
 package org.driftframework.receiver;
 
-import org.driftframework.protocol.Xip;
 
 /**
  * TODO
@@ -25,6 +24,6 @@ import org.driftframework.protocol.Xip;
  */
 public interface Receiver {
 	
-	void messageReceived(final Xip msg);
+	void messageReceived(final Object msg);
 	
 }

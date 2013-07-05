@@ -259,7 +259,6 @@ public class DefaultRouter implements Router {
 		}
 	}
 	
-	@Override
 	public <Req extends Xip> void send(Req req) {
 		Connector connector = next();
 		if (connector != null) {
@@ -276,7 +275,6 @@ public class DefaultRouter implements Router {
 		}
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> void send(
 			Req req, ResponseClosure<Resp> callback) {
 		Connector connector = next();
@@ -294,7 +292,6 @@ public class DefaultRouter implements Router {
 		}
 	}
 	
-	@Override
 	public <Req extends XipRequest, Resp extends XipResponse> Resp sendAndWait(
 			Req req) {
 		Connector connector = next();
@@ -310,7 +307,6 @@ public class DefaultRouter implements Router {
 		return null;
 	}
 	
-	@Override
 	public <Req extends Xip, Resp extends XipResponse> Resp sendAndWait(
 			Req req, long timeout, TimeUnit units) {
 		Connector connector = next();

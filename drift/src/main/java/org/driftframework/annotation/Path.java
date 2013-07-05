@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * TODO
+ * define the controller of method into biz annotation
  * 
  * @author qiaofeng
  * @version $Id: Path, v 0.1 2013年7月4日 下午2:25:41 Exp $

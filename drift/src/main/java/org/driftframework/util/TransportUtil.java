@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.driftframework.client.Sender;
 import org.driftframework.endpoint.Endpoint;
-import org.driftframework.protocol.AbstractXip;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelLocal;
 
@@ -79,9 +78,10 @@ public abstract class TransportUtil {
 		return (Endpoint) getAttribute(channel, TRANSPORT_ENDPOINT);
 	}
 	
-	public final static AbstractXip attachSender(AbstractXip propertyable,
-			Sender sender) {
-		propertyable.setProperty(TRANSPORT_SENDER, sender);
+	public final static Object attachSender(Object propertyable, Sender sender) {
+		if (propertyable instanceof Propertyable) {
+			((Propertyable) propertyable).setProperty(TRANSPORT_SENDER, sender);
+		}
 		return propertyable;
 	}
 	
