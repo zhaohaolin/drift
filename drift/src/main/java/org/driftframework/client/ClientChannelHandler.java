@@ -20,7 +20,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import org.driftframework.endpoint.Endpoint;
 import org.driftframework.endpoint.EndpointRepository;
-import org.driftframework.protocol.AbstractXip;
 import org.driftframework.util.TransportUtil;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -43,32 +42,45 @@ public class ClientChannelHandler extends SimpleChannelHandler {
 		this.endpointRepository = endpointRepository;
 	}
 	
+	/**
+	 * 接收服务端返回消息时,取得注册在Channel上的Endpoint,然后执行Endpoint的消息接收函数
+	 */
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
-		Channel channel = e.getChannel();
-		final AbstractXip msg = (AbstractXip) e.getMessage();
+		final Channel channel = e.getChannel();
+		final Object msg = e.getMessage();
 		if (LOG.isTraceEnabled()) {
-			LOG.trace("messageReceived: [{}]" + msg);
+			LOG.trace("messageReceived: [{}] at channel=[{}]", msg, channel);
 		}
 		
 		Endpoint endpoint = TransportUtil.getEndpointOfChannel(channel);
 		if (null != endpoint) {
 			endpoint.messageReceived(TransportUtil.attachSender(msg, endpoint));
 		} else {
-			LOG.warn("missing endpoint, ignore incoming msg: [{}]"
-					+ e.getMessage());
+			if (LOG.isWarnEnabled()) {
+				LOG.warn(
+						"missing endpoint, ignore incoming msg: [{}], at channel=[{}]",
+						e.getMessage(), channel);
+			}
 		}
 	}
 	
+	/**
+	 * 客户端通道打开时，暂时没有事件
+	 */
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
+		final Channel channel = e.getChannel();
 		if (LOG.isInfoEnabled()) {
-			LOG.info("open channel: [{}]" + e.getChannel());
+			LOG.info("open channel: [{}]" + channel);
 		}
 	}
 	
+	/**
+	 * 客户端通道关闭时，移出注册在通道上的Endpoint
+	 */
 	@Override
 	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
@@ -77,22 +89,34 @@ public class ClientChannelHandler extends SimpleChannelHandler {
 			
 			@Override
 			public void run() {
-				LOG.debug("channelClosed: remove " + channel.getId() + " ok.");
+				if (LOG.isDebugEnabled()) {
+					LOG.debug(
+							"channelClosed: remove channel id=[{}] at channel=[{}] ok.",
+							channel.getId(), channel);
+				}
 				Endpoint endpoint = TransportUtil.getEndpointOfChannel(channel);
 				if (null != endpoint) {
 					endpoint.stop();
 				}
 				endpointRepository.removeEndpoint(endpoint);
-				LOG.info("channelClosed: " + channel.getId() + " closed.");
+				if (LOG.isDebugEnabled()) {
+					LOG.debug("channelClosed: id=[{}] at channel=[{}] closed.",
+							channel.getId(), channel);
+				}
 			}
 			
 		});
 	}
 	
+	/**
+	 * 异常发生时
+	 */
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 			throws Exception {
-		LOG.error("transport: [{}]", e);
+		final Channel channel = e.getChannel();
+		if (LOG.isErrorEnabled())
+			LOG.error("transport: [{}] at channel=[{}]", e.getCause(), channel);
 		// 解码有错误的情况下，channel不关闭
 		// e.getChannel().close();
 	}

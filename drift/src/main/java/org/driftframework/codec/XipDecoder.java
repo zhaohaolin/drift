@@ -37,12 +37,19 @@ public class XipDecoder extends FrameDecoder {
 	private boolean				isDebugEnabled;
 	private XipCodecProvider	provider;
 	
+	public XipDecoder(XipCodecProvider provider) {
+		this.provider = provider;
+	}
+	
 	@Override
 	protected Object decode(ChannelHandlerContext ctx, Channel channel,
 			ChannelBuffer buffer) throws Exception {
 		if (null != buffer && buffer.readable()) {
 			// 读第一个整型数为MsgId
 			int msgId = buffer.readInt();
+			if (LOG.isTraceEnabled()) {
+				LOG.trace("decode=> msgId = [{}]", msgId);
+			}
 			
 			// 读第二个整形数为数据长度
 			int offset = buffer.readInt();

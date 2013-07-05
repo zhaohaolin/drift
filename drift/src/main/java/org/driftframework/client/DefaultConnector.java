@@ -109,23 +109,16 @@ public class DefaultConnector implements Connector {
 				public ChannelPipeline getPipeline() throws Exception {
 					ChannelPipeline pipeline = Channels.pipeline();
 					
+					pipeline.addLast("encoder",
+							new XipEncoder(context.getXipCodecProvider()));
+					pipeline.addLast("decoder",
+							new XipDecoder(context.getXipCodecProvider()));
+					
 					pipeline.addLast("clientHandler", new ClientChannelHandler(
 							endpointRepository));
 					pipeline.addLast("timeout", new IdleStateHandler(
 							new HashedWheelTimer(), 10, 10, 0));
 					pipeline.addLast("heartbeat", new HeartBeatHandler());
-					
-					pipeline.addLast("encoder", new XipEncoder() {
-						{
-							setProvider(context.getXipCodecProvider());
-						}
-					});
-					
-					pipeline.addLast("decoder", new XipDecoder() {
-						{
-							setProvider(context.getXipCodecProvider());
-						}
-					});
 					
 					return pipeline;
 				}

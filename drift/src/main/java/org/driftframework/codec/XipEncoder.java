@@ -38,6 +38,10 @@ public class XipEncoder extends OneToOneEncoder {
 	private boolean				isDebugEnabled	= false;
 	private XipCodecProvider	provider;
 	
+	public XipEncoder(XipCodecProvider provider) {
+		this.provider = provider;
+	}
+	
 	@Override
 	protected Object encode(ChannelHandlerContext ctx, Channel channel,
 			Object msg) throws Exception {

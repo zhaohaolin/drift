@@ -43,14 +43,18 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 		this.endpointFactory = endpointFactory;
 	}
 	
-	// channel连接时
+	// channel连接时：注册endpoint
 	@Override
 	public void channelConnected(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
-		// 注册endpoint
-		Endpoint endpoint = endpointFactory.createEndpoint(e.getChannel());
+		final Channel channel = e.getChannel();
+		Endpoint endpoint = endpointFactory.createEndpoint(channel);
 		if (null != endpoint) {
 			TransportUtil.addEndpointToChannel(e.getChannel(), endpoint);
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("register endpoint = [{}] at channel=[{}]",
+						new Object[] { endpoint, channel });
+			}
 		}
 	}
 	
@@ -58,26 +62,30 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 	@Override
 	public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
+		final Channel channel = e.getChannel();
 		if (LOG.isInfoEnabled()) {
-			LOG.info("channelOpened: channel [" + e.getChannel() + "]");
+			LOG.info("channelOpened: channel [" + channel + "]");
 		}
 	}
 	
-	// channel接收消息时：
+	// channel接收消息时：从channel取得endpoint,并处理业务
 	@Override
 	public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
 			throws Exception {
 		final Object msg = e.getMessage();
+		final Channel channel = e.getChannel();
+		
 		if (LOG.isTraceEnabled()) {
 			LOG.trace("messageReceived: " + msg);
 		}
 		
-		// 从channel取得endpoint,并处理业务
-		Endpoint endpoint = TransportUtil.getEndpointOfChannel(e.getChannel());
+		Endpoint endpoint = TransportUtil.getEndpointOfChannel(channel);
 		if (null != endpoint) {
 			endpoint.messageReceived(TransportUtil.attachSender(msg, endpoint));
 		} else {
-			LOG.warn("missing endpoint, ignore incoming msg:", msg);
+			LOG.warn(
+					"missing endpoint, ignore incoming msg=[{}] at channel=[{}]",
+					new Object[] { msg, channel });
 		}
 	}
 	
@@ -86,13 +94,17 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 	public void channelClosed(ChannelHandlerContext ctx, ChannelStateEvent e)
 			throws Exception {
 		// 清除不用的资源占用
-		Channel channel = e.getChannel();
+		final Channel channel = e.getChannel();
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("channel: " + channel.getId());
 		}
 		Endpoint endpoint = TransportUtil.getEndpointOfChannel(channel);
 		if (null != endpoint) {
 			endpoint.stop();
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("stop endpoint=[{}] at channel=[{}]", new Object[] {
+						endpoint, channel });
+			}
 		}
 	}
 	
@@ -100,9 +112,13 @@ public class AcceptorChannelHandler extends SimpleChannelHandler {
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
 			throws Exception {
-		LOG.warn("Unexpected exception from downstream." + e.getCause());
+		final Channel channel = e.getChannel();
+		if (LOG.isWarnEnabled()) {
+			LOG.warn(
+					"Unexpected exception from downstream=[{}] at channel=[{}]",
+					new Object[] { e.getCause(), channel });
+		}
 		// 解码有错误的情况下，session不关闭
 		// e.getChannel().close();
 	}
-	
 }
