@@ -125,6 +125,9 @@ public class DefaultConnector implements Connector {
 				
 			});
 			
+			client.setOption("tcpNoDelay", true);
+			client.setOption("keepAlive", true);
+			
 			// set options
 			if (null != options && options.size() > 0) {
 				for (String option : options) {
@@ -152,6 +155,10 @@ public class DefaultConnector implements Connector {
 	}
 	
 	public void stop() {
+		if (null != connectFuture) {
+			connectFuture.getChannel().close().awaitUninterruptibly();
+			connectFuture = null;
+		}
 		if (null != client) {
 			client.shutdown();
 			client.releaseExternalResources();

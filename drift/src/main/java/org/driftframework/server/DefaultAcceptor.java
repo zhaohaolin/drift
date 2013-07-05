@@ -27,9 +27,11 @@ import org.driftframework.endpoint.DefaultEndpointFactory;
 import org.driftframework.endpoint.EndpointFactory;
 import org.driftframework.receiver.Receiver;
 import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.timeout.IdleStateHandler;
 import org.jboss.netty.logging.InternalLoggerFactory;
@@ -56,6 +58,8 @@ public class DefaultAcceptor implements Acceptor {
 	private long					retryTimeout	= 30 * 1000;
 	private ServerBootstrap			bootstrap		= null;
 	private List<String>			options			= null;
+	private String					name;
+	private ChannelGroup			group			= null;
 	
 	/**
 	 * the drift Context for Application
@@ -72,6 +76,9 @@ public class DefaultAcceptor implements Acceptor {
 		// register logger factory
 		InternalLoggerFactory.setDefaultFactory(loggerFactory);
 		
+		// group
+		group = new DefaultChannelGroup(name);
+		
 		// new server socket bootstrap
 		bootstrap = new ServerBootstrap(new NioServerSocketChannelFactory(
 				Executors.newCachedThreadPool(),
@@ -81,28 +88,20 @@ public class DefaultAcceptor implements Acceptor {
 			LOG.debug("init the tcp acceptor bossExecutor and workExecutor ok.");
 		}
 		
-		// set codecFactory and set handler
-		bootstrap.setPipelineFactory(new ChannelPipelineFactory() {
+		ChannelPipeline pipeline = bootstrap.getPipeline();
+		
+		{
+			pipeline.addLast("encoder",
+					new XipEncoder(context.getXipCodecProvider()));
+			pipeline.addLast("decoder",
+					new XipDecoder(context.getXipCodecProvider()));
 			
-			@Override
-			public ChannelPipeline getPipeline() throws Exception {
-				ChannelPipeline pipeline = Channels.pipeline();
-				
-				pipeline.addLast("encoder",
-						new XipEncoder(context.getXipCodecProvider()));
-				pipeline.addLast("decoder",
-						new XipDecoder(context.getXipCodecProvider()));
-				
-				pipeline.addLast("acceptorHandler", new AcceptorChannelHandler(
-						endpointFactory));
-				pipeline.addLast("timeout", new IdleStateHandler(
-						new HashedWheelTimer(), 10, 10, 0));
-				pipeline.addLast("heartbeat", new HeartBeatHandler());
-				
-				return pipeline;
-			}
-			
-		});
+			pipeline.addLast("acceptorHandler", new AcceptorChannelHandler(
+					endpointFactory));
+			pipeline.addLast("timeout", new IdleStateHandler(
+					new HashedWheelTimer(), 10, 10, 0));
+			pipeline.addLast("heartbeat", new HeartBeatHandler());
+		}
 		
 		bootstrap.setOption("child.tcpNoDelay", true);
 		bootstrap.setOption("child.keepAlive", true);
@@ -119,8 +118,11 @@ public class DefaultAcceptor implements Acceptor {
 		boolean binded = false;
 		do {
 			try {
-				bootstrap.bind(new InetSocketAddress(this.ip, this.port));
+				Channel channel = bootstrap.bind(new InetSocketAddress(this.ip,
+						this.port));
 				binded = true;
+				group.add(channel);
+				
 			} catch (Exception e) {
 				LOG.warn("start failed on port:[{}], " + e + ", and retry...",
 						port);
@@ -146,8 +148,12 @@ public class DefaultAcceptor implements Acceptor {
 	}
 	
 	public void stop() {
+		ChannelGroupFuture future = group.close();
+		future.awaitUninterruptibly();// 阻塞直到服务器关闭
+		
 		if (null != bootstrap) {
 			bootstrap.shutdown();
+			bootstrap.releaseExternalResources();
 			bootstrap = null;
 		}
 	}
@@ -190,6 +196,14 @@ public class DefaultAcceptor implements Acceptor {
 	@Override
 	public void setRetryTimeout(long retryTimeout) {
 		this.retryTimeout = retryTimeout;
+	}
+	
+	/**
+	 * @param name
+	 *            the name to set
+	 */
+	public void setName(String name) {
+		this.name = name;
 	}
 	
 	public void setNextClosure(Closure nextClosure) {
