@@ -15,33 +15,16 @@
  */
 package org.driftframework.server;
 
-import java.util.Collection;
-import java.util.List;
+import org.driftframework.context.Context;
 
 /**
- * front controller interface
+ * 前置处理器接口定义,要作事务的前置处理器，必须实现此接口，然后注册到Dispatcher中去
  * 
  * @author qiaofeng
- * @version $Id: Dispatcher, v 0.1 2013-7-1 上午12:05:07 Exp $
+ * @version $Id: PreProcessHandler, v 0.1 2013年7月6日 下午7:17:42 Exp $
  */
-public interface Dispatcher {
+public interface PreProcessHandler {
 	
-	void setControllers(String packages);
-	
-	void setControllers(String... packs);
-	
-	<T> void setCourses(Collection<T> courses);
-	
-	void setThreads(int threads);
-	
-	void setContext(ServerContext context);
-	
-	void setPreProcess(PreProcessHandler handler);
-	
-	void setPostProcess(PostProcessHandler handler);
-	
-	void setPreProcesses(List<PreProcessHandler> list);
-	
-	void setPostProcesses(List<PostProcessHandler> list);
+	void process(final Context context, final Object msg);
 	
 }

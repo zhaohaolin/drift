@@ -44,8 +44,6 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.timeout.IdleStateHandler;
 import org.jboss.netty.logging.InternalLoggerFactory;
@@ -102,28 +100,19 @@ public class DefaultConnector implements Connector {
 					Executors.newCachedThreadPool(),
 					Executors.newCachedThreadPool()));
 			
-			// set codeFactory
-			client.setPipelineFactory(new ChannelPipelineFactory() {
+			ChannelPipeline pipeline = client.getPipeline();
+			{
+				pipeline.addLast("encoder",
+						new XipEncoder(context.getXipCodecProvider()));
+				pipeline.addLast("decoder",
+						new XipDecoder(context.getXipCodecProvider()));
 				
-				@Override
-				public ChannelPipeline getPipeline() throws Exception {
-					ChannelPipeline pipeline = Channels.pipeline();
-					
-					pipeline.addLast("encoder",
-							new XipEncoder(context.getXipCodecProvider()));
-					pipeline.addLast("decoder",
-							new XipDecoder(context.getXipCodecProvider()));
-					
-					pipeline.addLast("clientHandler", new ClientChannelHandler(
-							endpointRepository));
-					pipeline.addLast("timeout", new IdleStateHandler(
-							new HashedWheelTimer(), 10, 10, 0));
-					pipeline.addLast("heartbeat", new HeartBeatHandler());
-					
-					return pipeline;
-				}
-				
-			});
+				pipeline.addLast("clientHandler", new ClientChannelHandler(
+						endpointRepository));
+				pipeline.addLast("timeout", new IdleStateHandler(
+						new HashedWheelTimer(), 10, 10, 0));
+				pipeline.addLast("heartbeat", new HeartBeatHandler());
+			}
 			
 			client.setOption("tcpNoDelay", true);
 			client.setOption("keepAlive", true);

@@ -16,6 +16,7 @@
 package org.driftframework.server;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,11 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 	private final Map<String, Method>		methodTable		= new ConcurrentHashMap<String, Method>();
 	private final Map<Method, Class<?>>		clazzTable		= new ConcurrentHashMap<Method, Class<?>>();
 	private final Map<Method, Class<?>[]>	paramsTable		= new ConcurrentHashMap<Method, Class<?>[]>();
+	private final List<PreProcessHandler>	preProcessList	= new ArrayList<PreProcessHandler>();
+	private final List<PostProcessHandler>	postProcessList	= new ArrayList<PostProcessHandler>();
 	private ExecutorService					mainExecutor	= Executors
 																	.newSingleThreadExecutor();
+	private ServerContext					context;
 	
 	@Override
 	public void messageReceived(final Object input) {
@@ -67,8 +71,14 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 						return;
 					}
 					try {
+						// 运行前置处理器
+						invokePreProcesses(msg);
+						
 						// 运行业务接口的方法
 						invokeBizMethod(method, msg);
+						
+						// 运行后置处理器
+						invokePostProcesses(msg);
 					} catch (Exception e) {
 						LOG.error("biz error [{}].", e);
 					}
@@ -89,11 +99,30 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 		
 	}
 	
+	// 运行前置处理器
+	private void invokePreProcesses(final Xip msg) {
+		if (null != preProcessList && preProcessList.isEmpty()) {
+			for (PreProcessHandler handler : preProcessList) {
+				handler.process(context, msg);
+			}
+		}
+	}
+	
+	// 运行后置处理器
+	private void invokePostProcesses(final Xip msg) {
+		if (null != postProcessList && postProcessList.isEmpty()) {
+			for (PostProcessHandler handler : postProcessList) {
+				handler.process(context, msg);
+			}
+		}
+	}
+	
 	private void invokeBizMethod(Method method, final Xip msg) {
 		if (null != method) {
 			try {
 				Class<?> course = clazzTable.get(method);
-				method.invoke(course, msg);
+				// arg0: context, arg1: req, arg2: resp
+				method.invoke(course, context, msg);
 			} catch (Exception e) {
 				LOG.error("Invoke biz method [" + method.getName()
 						+ "] failed. " + e);
@@ -123,6 +152,8 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 	
 	public <T> void setCourses(Collection<T> courses) {
 		for (T t : courses) {
+			
+			// 如果没有实现注解Controller，说明不是业务实现控制器
 			if (!t.getClass().isAnnotationPresent(Controller.class)) {
 				if (LOG.isDebugEnabled()) {
 					LOG.debug("[{}] is not drift controller implements class.",
@@ -155,6 +186,39 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 	
 	public void setThreads(int threads) {
 		this.mainExecutor = Executors.newFixedThreadPool(threads);
+	}
+	
+	@Override
+	public void setContext(ServerContext context) {
+		this.context = context;
+	}
+	
+	@Override
+	public void setPreProcess(PreProcessHandler handler) {
+		this.preProcessList.add(handler);
+	}
+	
+	@Override
+	public void setPostProcess(PostProcessHandler handler) {
+		this.postProcessList.add(handler);
+	}
+	
+	@Override
+	public void setPreProcesses(List<PreProcessHandler> list) {
+		if (null != list && !list.isEmpty()) {
+			for (PreProcessHandler handler : list) {
+				this.preProcessList.add(handler);
+			}
+		}
+	}
+	
+	@Override
+	public void setPostProcesses(List<PostProcessHandler> list) {
+		if (null != list && !list.isEmpty()) {
+			for (PostProcessHandler handler : list) {
+				this.postProcessList.add(handler);
+			}
+		}
 	}
 	
 }

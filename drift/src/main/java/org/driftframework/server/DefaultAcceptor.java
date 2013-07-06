@@ -152,7 +152,7 @@ public class DefaultAcceptor implements Acceptor {
 		future.awaitUninterruptibly();// 阻塞直到服务器关闭
 		
 		if (null != bootstrap) {
-			bootstrap.shutdown();
+			bootstrap.shutdown();// 停止，但未运行完成的事务将继续执行
 			bootstrap.releaseExternalResources();
 			bootstrap = null;
 		}
