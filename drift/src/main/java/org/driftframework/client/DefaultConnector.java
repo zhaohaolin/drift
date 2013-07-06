@@ -156,7 +156,7 @@ public class DefaultConnector implements Connector {
 	
 	public void stop() {
 		if (null != connectFuture) {
-			connectFuture.getChannel().close().awaitUninterruptibly();
+			// connectFuture.getChannel().close().awaitUninterruptibly();
 			connectFuture = null;
 		}
 		if (null != client) {

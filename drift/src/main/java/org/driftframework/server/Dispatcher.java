@@ -25,6 +25,10 @@ import java.util.Collection;
  */
 public interface Dispatcher {
 	
+	void setControllers(String packages);
+	
+	void setControllers(String... packs);
+	
 	<T> void setCourses(Collection<T> courses);
 	
 	void setThreads(int threads);

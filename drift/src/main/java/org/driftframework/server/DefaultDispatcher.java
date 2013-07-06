@@ -17,6 +17,7 @@ package org.driftframework.server;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -26,6 +27,7 @@ import org.driftframework.annotation.Controller;
 import org.driftframework.annotation.Path;
 import org.driftframework.protocol.Xip;
 import org.driftframework.receiver.Receiver;
+import org.driftframework.util.ClassLoaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,33 +51,42 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 	
 	@Override
 	public void messageReceived(final Object input) {
-		final Xip msg = (Xip) input;
-		Runnable task = new Runnable() {
+		if (input instanceof Xip) {
+			final Xip msg = (Xip) input;
+			Runnable task = new Runnable() {
+				
+				@Override
+				public void run() {
+					
+					String url = msg.getPath();
+					Method method = methodTable.get(url);
+					if (null == method) {
+						LOG.error("No course class found for ["
+								+ msg.getClass().getName()
+								+ "]. Process stopped.");
+						return;
+					}
+					try {
+						// 运行业务接口的方法
+						invokeBizMethod(method, msg);
+					} catch (Exception e) {
+						LOG.error("biz error [{}].", e);
+					}
+				}
+				
+			};
 			
-			@Override
-			public void run() {
-				String url = msg.getPath();
-				Method method = methodTable.get(url);
-				if (null == method) {
-					LOG.error("No course class found for ["
-							+ msg.getClass().getName() + "]. Process stopped.");
-					return;
-				}
-				try {
-					// 运行业务接口的方法
-					invokeBizMethod(method, msg);
-				} catch (Exception e) {
-					LOG.error("biz error [{}].", e);
-				}
+			if (mainExecutor != null) {
+				mainExecutor.submit(task);
+			} else {
+				task.run();
 			}
-			
-		};
-		
-		if (mainExecutor != null) {
-			mainExecutor.submit(task);
 		} else {
-			task.run();
+			if (LOG.isWarnEnabled()) {
+				LOG.warn("input is not Xip instance obj.");
+			}
 		}
+		
 	}
 	
 	private void invokeBizMethod(Method method, final Xip msg) {
@@ -90,6 +101,23 @@ public class DefaultDispatcher implements Dispatcher, Receiver {
 		} else {
 			LOG.error("No biz method found for message ["
 					+ msg.getClass().getName() + "]. No process execute.");
+		}
+	}
+	
+	public void setControllers(String... packs) {
+		for (String pack : packs) {
+			setControllers(pack);
+		}
+	}
+	
+	public void setControllers(String packages) {
+		List<Class<?>> list = ClassLoaderUtils.loaderClass(packages);
+		if (null != list && !list.isEmpty()) {
+			setCourses(list);
+			if (LOG.isDebugEnabled()) {
+				LOG.debug("get classes=[{}] for packages=[{}]", new Object[] {
+						list, packages });
+			}
 		}
 	}
 	

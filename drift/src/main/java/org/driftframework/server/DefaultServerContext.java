@@ -18,7 +18,6 @@ package org.driftframework.server;
 import java.util.List;
 
 import org.driftframework.context.DefaultContext;
-import org.driftframework.util.ClassLoaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,12 +44,11 @@ public class DefaultServerContext extends DefaultContext implements
 	
 	@Override
 	public void setControllers(String packages) {
-		List<Class<?>> list = ClassLoaderUtils.loaderClass(packages);
-		if (null != list && !list.isEmpty()) {
-			addControllers(list);
+		String[] packs = packages.split("\\,");
+		if (null != packs) {
+			this.dispatcher.setControllers(packs);
 			if (LOG.isDebugEnabled()) {
-				LOG.debug("get classes=[{}] for packages=[{}]", new Object[] {
-						list, packages });
+				LOG.debug("add controller from package=[{}]", packages);
 			}
 		}
 	}
